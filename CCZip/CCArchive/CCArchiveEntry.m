@@ -27,9 +27,9 @@
 #import "CCArchive.h"
 #import "zip.h"
 
-NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.JXZippedFileInfo";
+NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.CCArchiveFileInfo";
 
-#define kJXCouldNotAccessZippedFileInfo 1101
+#define kCCCouldNotAccessCCArchiveEntry 1101
 
 
 @interface CCArchiveEntry ()
@@ -81,14 +81,14 @@ NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.JXZippedFil
             if (error) {
                 NSString *errorDescription;
                 if (filePath) {
-                    errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for “%@” in zipped file: %s", @"Cannot access file info in zipped file"),
+                    errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for “%@” in zipped file: %s", @"Cannot access file info in Archive file"),
                                         filePath, zip_strerror(archive)];
                 } else {
-                    errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for file %lu in zipped file: %s", @"Cannot access file info in zipped file"),
+                    errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for file %lu in zipped file: %s", @"Cannot access file info in Archive file"),
                                         (unsigned long)index, zip_strerror(archive)];
                 }
                 NSDictionary *errorDetail = @{NSLocalizedDescriptionKey : errorDescription};
-                *error = [NSError errorWithDomain:CCArchiveFileInfoErrorDomain code:kJXCouldNotAccessZippedFileInfo userInfo:errorDetail];
+                *error = [NSError errorWithDomain:CCArchiveFileInfoErrorDomain code:kCCCouldNotAccessCCArchiveEntry userInfo:errorDetail];
             }
             return nil;
         }
