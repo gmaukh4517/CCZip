@@ -1,0 +1,6 @@
+framework module CCZip {
+  umbrella header "CCZip.h"
+
+  export *
+  module * { export * }
+}

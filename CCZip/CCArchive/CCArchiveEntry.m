@@ -62,10 +62,8 @@ NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.JXZippedFil
                                     options:(CCOptionsFile)options
                                       error:(NSError **)error;
 {
-    ;
-
     if (self = [super init]) {
-        if (archive)
+        if (!archive)
             return nil;
 
         options = (options & ZIP_FL_ENC_UTF_8);
