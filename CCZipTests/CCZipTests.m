@@ -48,6 +48,15 @@
     if (zipArchive == nil) {
         NSLog(@"%@", error);
     }
+    
+    CCArchiveEntry *zippedFileInfo = [zipArchive archiveFileWithIndex:0 error:nil];
+    NSString *path = zippedFileInfo.path;
+    
+    [zipArchive addFileWithPath:[NSString stringWithFormat:@"%@2/",path] forData:[@"1111" dataUsingEncoding:NSUTF8StringEncoding] error:&error];
+    NSLog(@"111111%@", error);
+    [zipArchive addFolderWithPath:[NSString stringWithFormat:@"%@3/",path] error:&error];
+    NSLog(@"222222%@", error);
+     [zipArchive saveAndReturnError:nil];
 
     [CCArchive unzipFIleAtpath:zipPath toZipPath:toPath error:&error];
     NSLog(@"%@", error);

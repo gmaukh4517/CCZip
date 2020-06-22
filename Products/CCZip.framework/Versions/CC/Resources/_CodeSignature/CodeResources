@@ -6,7 +6,7 @@
 	<dict>
 		<key>Headers/CCArchive.h</key>
 		<data>
-		53SCNgmUeIHDFc0yOCi1afO4mRs=
+		8GqMUbN5mCW3r01F5VT/N/rkK5c=
 		</data>
 		<key>Headers/CCArchiveEntry.h</key>
 		<data>
@@ -18,7 +18,7 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		5UhCEvsn0AXM5w3K4LfJvUQ1nVA=
+		5x2PN47ybUXx4cNNkQBD1yYME8A=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
@@ -31,11 +31,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			53SCNgmUeIHDFc0yOCi1afO4mRs=
+			8GqMUbN5mCW3r01F5VT/N/rkK5c=
 			</data>
 			<key>hash2</key>
 			<data>
-			vjYw1hog6dia9jkZwazV4Iv3MwmJ2UCejr1R2VFri0U=
+			qGXjRDCxdtyqYGXeMxKs4/BTHtiKjPr9Ua7DBuRHky4=
 			</data>
 		</dict>
 		<key>Headers/CCArchiveEntry.h</key>

@@ -147,6 +147,11 @@ typedef NS_ENUM(int, CCOptionsFile) {
 /// @param error 执行错误
 - (NSData *)dataForZippedFileInfo:(CCArchiveEntry *)zippedFileInfo options:(CCOptionsFile)options error:(NSError **)error;
 
+/// 往压缩包添加文件夹
+/// @param folderPath 文件层级路径结尾是创建文件夹名称
+/// @param error 执行错误
+- (BOOL)addFolderWithPath:(NSString *)folderPath error:(NSError **)error;
+
 /// 往压缩包添加文件或文件夹
 /// @param filePath 文件层级路径 结尾+/是创建文件夹
 /// @param data 文件数据

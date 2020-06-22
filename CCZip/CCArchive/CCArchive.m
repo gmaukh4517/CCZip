@@ -40,6 +40,7 @@ const int kCCCouldNotReadZippedFile = 1004;
 const int kCCInvalidZippedFileInfo = 1005;
 const int kCCCouldNotAddZippedFile = 1006;
 const int kCCCouldNotReplaceZippedFile = 1007;
+const int kCCCouldNotAddZippedFolder = 1008;
 
 @interface CCArchiveEntry (Protected)
 
@@ -87,7 +88,7 @@ const int kCCCouldNotReplaceZippedFile = 1007;
 {
     if (self = [super init]) {
         _URL = [NSURL URLWithString:filePath];
-
+        
         // NOTE: We could rewrite this using file descriptors.
         const char *zip_file_path = [filePath UTF8String];
         int err;
@@ -103,14 +104,14 @@ const int kCCCouldNotReplaceZippedFile = 1007;
             return nil;
         }
     }
-
+    
     return self;
 }
 
 - (void)dealloc
 {
     self.URL = nil;
-
+    
     if (_za != NULL) {
         zip_unchange_all(_za);
         zip_close(_za);
@@ -184,16 +185,16 @@ const int kCCCouldNotReplaceZippedFile = 1007;
 - (NSData *)dataForZippedFileInfo:(CCArchiveEntry *)zippedFileInfo options:(CCOptionsFile)options error:(NSError **)error;
 {
     if (zippedFileInfo == nil) return nil;
-
+    
     zip_uint64_t zipped_file_index = zippedFileInfo.index;
     zip_uint64_t zipped_file_size = zippedFileInfo.size;
-
+    
     if ((zipped_file_index == NSNotFound) || (zipped_file_size == NSNotFound)) {
         if (error)
             *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"Invalid zipped file info.", @"Invalid zipped file info")] code:kCCInvalidZippedFileInfo];
         return nil;
     }
-
+    
     struct zip_file *zipped_file = zip_fopen_index(_za, zipped_file_index, (options & ZIP_FL_ENC_UTF_8));
     if (!zipped_file) {
         if (error) {
@@ -201,12 +202,12 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                                        zippedFileInfo.path, self.URL, zip_strerror(_za)]
                                  code:kCCCouldNotOpenZippedFile];
         }
-
+        
         return nil;
     }
-
+    
     char *buf = malloc((size_t)zipped_file_size); // freed by NSData
-
+    
     zip_int64_t n = zip_fread(zipped_file, buf, zipped_file_size);
     if (n < (zip_int64_t)zipped_file_size) {
         if (error) {
@@ -214,65 +215,81 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                                        zippedFileInfo.path, self.URL, zip_file_strerror(zipped_file)]
                                  code:kCCCouldNotReadZippedFile];
         }
-
+        
         zip_fclose(zipped_file);
-
+        
         free(buf);
-
+        
         return nil;
     }
-
+    
     zip_fclose(zipped_file);
-
+    
     return [NSData dataWithBytesNoCopy:buf length:(NSUInteger)zipped_file_size freeWhenDone:YES];
 }
 
+- (BOOL)addFolderWithPath:(NSString *)folderPath error:(NSError **)error
+{
+    if (!folderPath) return NO;
+    
+    const char *folder_path = [folderPath UTF8String];
+    zip_int64_t index;
+    if (((index = zip_dir_add(_za, folder_path, (ZIP_FL_ENC_UTF_8))) < 0)) {
+        if (error) {
+            *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"Error while adding zipped folder “%@” in archive “%@”: %s", @"Error while adding zipped folder"),
+                                       folderPath, self.URL, zip_strerror(_za)]
+                                 code:kCCCouldNotAddZippedFolder];
+        }
+        return NO;
+    }
+    return YES;
+}
 
 - (BOOL)addFileWithPath:(NSString *)filePath forData:(NSData *)data error:(NSError **)error;
 {
     if ((filePath == nil) || (data == nil)) return NO;
-
+    
     // CHANGEME: Passing the index back might be helpful
-
+    
     const char *file_path = [filePath UTF8String];
     struct zip_source *file_zip_source = zip_source_buffer(_za, [data bytes], [data length], 0);
     zip_int64_t index;
-
+    
     if ((file_zip_source == NULL) || ((index = zip_file_add(_za, file_path, file_zip_source, (ZIP_FL_ENC_UTF_8))) < 0)) {
         if (error) {
             *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"Error while adding zipped file “%@” in archive “%@”: %s", @"Error while adding zipped file"),
                                        filePath, self.URL, zip_strerror(_za)]
                                  code:kCCCouldNotAddZippedFile];
         }
-
+        
         if (file_zip_source) zip_source_free(file_zip_source);
-
+        
         return NO;
     }
-
+    
     return YES;
 }
 
 - (BOOL)replaceFile:(CCArchiveEntry *)zippedFileInfo withData:(NSData *)data error:(NSError **)error;
 {
     if ((zippedFileInfo == nil) || (data == nil)) return NO;
-
+    
     struct zip_source *file_zip_source = zip_source_buffer(_za, [data bytes], [data length], 0);
-
+    
     if ((file_zip_source == NULL) || (zip_file_replace(_za, zippedFileInfo.index, file_zip_source, 0) < 0)) {
         if (error) {
             *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"Error while replacing zipped file “%@” in archive “%@”: %s", @"Error while replacing zipped file"),
                                        zippedFileInfo.path, self.URL, zip_strerror(_za)]
                                  code:kCCCouldNotReplaceZippedFile];
         }
-
+        
         if (file_zip_source) zip_source_free(file_zip_source);
-
+        
         return NO;
     }
-
+    
     // We don’t need to zip_source_free() here, as libzip has taken care of it once we have reached this line.
-
+    
     return YES;
 }
 
@@ -299,7 +316,7 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                 }
             }
         }
-
+        
         if (zip_close(zipfile) < 0) {
             if (error) {
                 *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"The zip archive “%@” could not be saved: %s", @"Cannot save zip archive"),
@@ -316,7 +333,7 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                                  code:kCCCouldNotOpenZip];
         }
     }
-
+    
     return YES;
 }
 
@@ -330,16 +347,16 @@ const int kCCCouldNotReplaceZippedFile = 1007;
         NSInteger fileCount = (NSInteger)zip_get_num_entries(zipfile, ZIP_FL_UNCHANGED);
         struct zip_stat stat;
         struct zip_file *entries = NULL;
-
+        
         char *toPath = (char *)[toZipPath UTF8String];
         if ((toPath)[ strlen((toPath)) - 1 ] != '/')
             strcat((toPath), "/");
-
+        
         for (NSInteger index = 0; index < fileCount; index++) {
             zip_stat_index(zipfile, index, 0, &stat);
             entries = zip_fopen_index(zipfile, index, 0);
             if (!entries) break;
-
+            
             char zipPath[ 256 ];
             strcpy(zipPath, toPath);
             strcat(zipPath, stat.name);
@@ -361,7 +378,7 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                     }
                 }
             }
-
+            
             //create the original file
             FILE *fp = fopen(zipPath, "w+");
             if (fp) {
@@ -375,11 +392,11 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                     fwrite(outbuf, 1, (unsigned long)iRead, fp);
                     iLen += iRead;
                 }
-
+                
                 fclose(fp);
             }
         }
-
+        
         if (zip_close(zipfile) < 0) {
             if (error) {
                 *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"The zip archive “%@” could not be saved: %s", @"Cannot save zip archive"),
@@ -396,22 +413,22 @@ const int kCCCouldNotReplaceZippedFile = 1007;
                                  code:kCCCouldNotOpenZip];
         }
     }
-
-
+    
+    
     return isSuccess;
 }
 
 - (BOOL)saveAndReturnError:(NSError **)error;
 {
     if (!_za) return NO;
-
+    
     if (zip_close(_za) < 0) {
         if (error) {
             *error = [CCArchive error:[NSString stringWithFormat:NSLocalizedString(@"The zip archive “%@” could not be saved: %s", @"Cannot save zip archive"),
                                        self.URL, zip_strerror(_za)]
                                  code:kCCCouldNotSaveZip];
         }
-
+        
         return NO;
     } else {
         _za = NULL;
