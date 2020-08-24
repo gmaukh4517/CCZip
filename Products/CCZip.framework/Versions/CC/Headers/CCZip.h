@@ -23,7 +23,5 @@
 // THE SOFTWARE.
 //
 
-#import <UIKit/UIKit.h>
-
 #import <CCZip/CCArchive.h>
 #import <CCZip/CCArchiveEntry.h>
