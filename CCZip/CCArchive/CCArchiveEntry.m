@@ -41,6 +41,8 @@ NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.CCArchiveFi
 @property (nonatomic, assign) NSUInteger compressedSize; // size of the file (compressed)
 @property (nonatomic, copy) NSDate *modificationDate;    // modification date
 
+@property (nonatomic, assign) BOOL isDirectory;
+
 @property (nonatomic, assign) BOOL hasCRC;
 @property (nonatomic, assign) uint32_t CRC; // crc of file data
 
@@ -82,16 +84,17 @@ NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.CCArchiveFi
                 NSString *errorDescription;
                 if (filePath) {
                     errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for “%@” in zipped file: %s", @"Cannot access file info in Archive file"),
-                                        filePath, zip_strerror(archive)];
+                                                                  filePath, zip_strerror(archive)];
                 } else {
                     errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Could not access file info for file %lu in zipped file: %s", @"Cannot access file info in Archive file"),
-                                        (unsigned long)index, zip_strerror(archive)];
+                                                                  (unsigned long)index, zip_strerror(archive)];
                 }
                 NSDictionary *errorDetail = @{NSLocalizedDescriptionKey : errorDescription};
                 *error = [NSError errorWithDomain:CCArchiveFileInfoErrorDomain code:kCCCouldNotAccessCCArchiveEntry userInfo:errorDetail];
             }
             return nil;
         }
+        [self handlerAttributes];
     }
 
     return self;
@@ -136,93 +139,48 @@ NSString *const CCArchiveFileInfoErrorDomain = @"com.CCArchive.Error.CCArchiveFi
                                                      error:error];
 }
 
-
-- (NSString *)path;
+- (void)handlerAttributes
 {
-    if (!_path) {
-        if (_file_info.valid & ZIP_STAT_NAME) {
-            // FIXME: We assume the file names are UTF-8.
-            _path = @(_file_info.name);
-        }
+    if (_file_info.valid & ZIP_STAT_NAME) {
+        // FIXME: We assume the file names are UTF-8.
+        _path = @(_file_info.name);
     }
-    return _path;
-}
 
-- (NSString *)fileName
-{
-    if (!_fileName) {
-        if (_file_info.valid & ZIP_STAT_NAME) {
-            NSString *name = [NSString stringWithUTF8String:_file_info.name];
-            name = [name substringToIndex:name.length - 1];
-            _fileName = [name componentsSeparatedByString:@"/"].lastObject;
-        }
+    if (_file_info.valid & ZIP_STAT_NAME) {
+        _fileName = [NSString stringWithUTF8String:_file_info.name].lastPathComponent;
     }
-    return _fileName;
-}
 
-- (NSUInteger)index;
-{
     if (_file_info.valid & ZIP_STAT_INDEX)
-        return (NSUInteger)_file_info.index;
-    else
-        return NSNotFound;
-}
+        _index = (NSUInteger)_file_info.index;
 
-- (NSUInteger)size;
-{
     if (_file_info.valid & ZIP_STAT_SIZE)
-        return (NSUInteger)_file_info.size;
-    else
-        return NSNotFound;
-}
+        _size = (NSUInteger)_file_info.size;
 
-- (NSUInteger)compressedSize;
-{
     if (_file_info.valid & ZIP_STAT_COMP_SIZE)
-        return (NSUInteger)_file_info.comp_size;
-    else
-        return NSNotFound;
-}
+        _compressedSize = (NSUInteger)_file_info.comp_size;
 
-- (NSDate *)modificationDate;
-{
-    if (!_modificationDate) {
-        if (_file_info.valid & ZIP_STAT_MTIME) {
-            _modificationDate = [NSDate dateWithTimeIntervalSince1970:_file_info.mtime];
-        }
+
+    if (_file_info.valid & ZIP_STAT_MTIME) {
+        _modificationDate = [NSDate dateWithTimeIntervalSince1970:_file_info.mtime];
     }
-    return _modificationDate;
-}
 
+    _isDirectory = NO;
+    if (_size == 0)
+        _isDirectory = YES;
 
-- (BOOL)hasCRC;
-{
+    _hasCRC = NO;
     if (_file_info.valid & ZIP_STAT_CRC)
-        return YES;
-    else
-        return NO;
-}
+        _hasCRC = YES;
 
-- (uint32_t)CRC;
-{
-    return (uint32_t)_file_info.crc;
-}
+    _CRC = (uint32_t)_file_info.crc;
 
-
-- (uint16_t)compressionMethod;
-{
+    _compressionMethod = ZIP_EM_UNKNOWN;
     if (_file_info.comp_method & ZIP_STAT_COMP_METHOD)
-        return (uint16_t)_file_info.crc;
-    else
-        return ZIP_EM_UNKNOWN;
-}
+        _compressionMethod = (uint16_t)_file_info.crc;
 
-- (uint16_t)encryptionMethod;
-{
+    _encryptionMethod = 0xffff;
     if (_file_info.encryption_method & ZIP_STAT_ENCRYPTION_METHOD)
-        return (uint16_t)_file_info.crc;
-    else
-        return 0xffff; // Unknown
+        _encryptionMethod = (uint16_t)_file_info.crc;
 }
 
 @end

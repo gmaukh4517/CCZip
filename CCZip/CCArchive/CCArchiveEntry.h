@@ -34,6 +34,8 @@
 @property (nonatomic, readonly, assign) NSUInteger compressedSize; // size of the file (compressed)
 @property (nonatomic, readonly, copy) NSDate *modificationDate;    // modification date
 
+@property (nonatomic, readonly, assign) BOOL isDirectory;
+
 @property (nonatomic, readonly, assign) BOOL hasCRC;
 @property (nonatomic, readonly, assign) uint32_t CRC; // crc of file data
 
